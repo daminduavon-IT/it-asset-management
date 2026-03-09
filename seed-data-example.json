@@ -1,0 +1,40 @@
+[
+    {
+        "assetName": "Dell Latitude 5420",
+        "category": "Laptop",
+        "brand": "Dell",
+        "model": "Latitude 5420",
+        "serialNumber": "DL5420-XYZ",
+        "refNumber": "APC-IT-LAP-001",
+        "quantity": 1,
+        "unitPrice": 1200,
+        "totalValue": 1200,
+        "location": "Head Office",
+        "assignedTo": "John Smith",
+        "department": "IT",
+        "status": "Assigned",
+        "condition": "Good",
+        "purchaseDate": "2023-01-15T00:00:00.000Z",
+        "warrantyEnd": "2026-01-15T00:00:00.000Z",
+        "remarks": "Assigned to System Admin"
+    },
+    {
+        "assetName": "HP LaserJet Pro MFP",
+        "category": "Printer",
+        "brand": "HP",
+        "model": "M428fdw",
+        "serialNumber": "VNB3456",
+        "refNumber": "APC-IT-PRN-005",
+        "quantity": 1,
+        "unitPrice": 450,
+        "totalValue": 450,
+        "location": "Branch A",
+        "assignedTo": "",
+        "department": "Sales",
+        "status": "Available",
+        "condition": "New",
+        "purchaseDate": "2023-11-20T00:00:00.000Z",
+        "warrantyEnd": "2024-11-20T00:00:00.000Z",
+        "remarks": "Kept in storage room"
+    }
+]
