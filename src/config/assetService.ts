@@ -80,6 +80,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
         underRepair: 0,
         byCategory: {},
         byLocation: {},
+        byDepartment: {},
         serviceReminders: []
     };
 
@@ -102,6 +103,11 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
         // Location counts
         if (asset.location) {
             stats.byLocation[asset.location] = (stats.byLocation[asset.location] || 0) + 1;
+        }
+
+        // Department counts
+        if (asset.department) {
+            stats.byDepartment[asset.department] = (stats.byDepartment[asset.department] || 0) + 1;
         }
 
         // Service Reminders

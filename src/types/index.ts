@@ -1,6 +1,12 @@
 export type AssetStatus = 'Available' | 'Assigned' | 'Under Repair' | 'Retired';
 export type AssetCondition = 'New' | 'Good' | 'Fair' | 'Poor';
 
+// Company departments
+export type Department = 'HR' | 'FINANCE' | 'ADMIN' | 'IT' | 'MARKETING' | 'COORDINATION & CUSTOMER CARE';
+
+// Company locations
+export type Location = 'BioSafe' | 'Greenlab' | 'Stores1' | 'Stores2' | 'Head Office';
+
 export interface Asset {
     id: string;
     assetName: string;
@@ -12,9 +18,9 @@ export interface Asset {
     quantity: number;
     unitPrice: number;
     totalValue: number;
-    location: string;
+    location: Location;
     assignedTo?: string;
-    department: string;
+    department: Department;
     status: AssetStatus;
     condition: AssetCondition;
     purchaseDate: string; // ISO string format
@@ -32,6 +38,7 @@ export interface DashboardStats {
     underRepair: number;
     byCategory: Record<string, number>;
     byLocation: Record<string, number>;
+    byDepartment: Record<string, number>;
     serviceReminders: Asset[];
 }
 

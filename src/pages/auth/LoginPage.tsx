@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../config/firebase';
-import { ShieldAlert, LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -33,7 +33,7 @@ export default function LoginPage() {
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="flex justify-center text-white">
                     <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/20 shadow-xl">
-                        <ShieldAlert className="h-12 w-12 text-[#F29100]" />
+                        <img src="/avon-logo.png" className="h-24 w-auto mx-auto object-contain" alt="Company Logo" />
                     </div>
                 </div>
                 <h2 className="mt-6 text-center text-3xl font-extrabold text-white">

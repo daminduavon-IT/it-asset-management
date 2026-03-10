@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, DollarSign, MapPin, Tag, User, Info, Hash, Monitor, Activity } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, DollarSign, MapPin, Tag, User, Info, Hash, Monitor, Activity, Building } from 'lucide-react';
 import type { Asset } from '../../types';
 import { getAssetById } from '../../config/assetService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -155,6 +155,8 @@ export default function AssetDetailsPage() {
                         </div>
                         <div className="p-8 space-y-8 relative z-10">
                             <InfoRow icon={User} label="Assigned To" value={asset.assignedTo || 'Unassigned'} highlight />
+                            <div className="h-px bg-gradient-to-r from-gray-200 to-transparent w-full" />
+                            <InfoRow icon={Building} label="Department" value={asset.department || 'Not Specified'} />
                             <div className="h-px bg-gradient-to-r from-gray-200 to-transparent w-full" />
                             <InfoRow icon={MapPin} label="Location" value={asset.location || 'Unknown'} />
                             <div className="h-px bg-gradient-to-r from-gray-200 to-transparent w-full" />

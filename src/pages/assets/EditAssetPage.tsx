@@ -184,10 +184,28 @@ export default function EditAssetPage() {
                                     className="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
                                 >
                                     <option value="Head Office">Head Office</option>
-                                    <option value="Branch A">Branch A</option>
-                                    <option value="Branch B">Branch B</option>
-                                    <option value="Warehouse">Warehouse</option>
+                                    <option value="BioSafe">BioSafe</option>
+                                    <option value="Greenlab">Greenlab</option>
+                                    <option value="Stores1">Stores1</option>
+                                    <option value="Stores2">Stores2</option>
                                 </select>
+                            </div>
+
+                            <div className="sm:col-span-3">
+                                <label className="block text-sm font-medium leading-6 text-gray-900">Department *</label>
+                                <select
+                                    {...register('department', { required: 'Department is required' })}
+                                    className="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                                >
+                                    <option value="">Select department</option>
+                                    <option value="HR">HR</option>
+                                    <option value="FINANCE">FINANCE</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                    <option value="IT">IT</option>
+                                    <option value="MARKETING">MARKETING</option>
+                                    <option value="COORDINATION & CUSTOMER CARE">COORDINATION & CUSTOMER CARE</option>
+                                </select>
+                                {errors.department && <span className="text-red-500 text-xs mt-1">{errors.department.message}</span>}
                             </div>
 
                             <div className="sm:col-span-3">
