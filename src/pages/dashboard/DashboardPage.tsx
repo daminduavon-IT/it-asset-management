@@ -90,35 +90,35 @@ export default function DashboardPage() {
                             <h3 className="text-base font-bold leading-6 text-gray-900 mb-6 border-b border-gray-50 pb-4">
                                 Assets by Category
                             </h3>
-                                <div className="flex-1 min-h-[350px] sm:min-h-[300px] w-full relative">
-                                    {stats && Object.keys(stats.byCategory).length > 0 ? (
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={Object.entries(stats.byCategory).map(([name, value]) => ({ name, value }))}
-                                                    cx="50%"
-                                                    cy="40%"
-                                                    innerRadius={50}
-                                                    outerRadius={90}
-                                                    paddingAngle={2}
-                                                    dataKey="value"
-                                                >
-                                                {Object.entries(stats.byCategory).map((entry, index) => (
+                            <div className="flex-1 min-h-[350px] sm:min-h-[300px] w-full relative">
+                                {stats && Object.keys(stats.byCategory).length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={Object.entries(stats.byCategory).map(([name, value]) => ({ name, value }))}
+                                                cx="50%"
+                                                cy="40%"
+                                                innerRadius={50}
+                                                outerRadius={90}
+                                                paddingAngle={2}
+                                                dataKey="value"
+                                            >
+                                                {Object.entries(stats.byCategory).map((_, index) => (
                                                     <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
                                                 ))}
                                             </Pie>
-                                                <Tooltip 
-                                                    formatter={(value: number) => [`${value} Assets`, 'Count']}
-                                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', zIndex: 50 }}
-                                                />
-                                                <Legend 
-                                                    verticalAlign="bottom" 
-                                                    height={80} 
-                                                    iconType="circle" 
-                                                    wrapperStyle={{ fontSize: '12px', paddingTop: '20px', lineHeight: '20px' }} 
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
+                                            <Tooltip
+                                                formatter={(value: any) => [`${value} Assets`, 'Count']}
+                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', zIndex: 50 }}
+                                            />
+                                            <Legend
+                                                verticalAlign="bottom"
+                                                height={80}
+                                                iconType="circle"
+                                                wrapperStyle={{ fontSize: '12px', paddingTop: '20px', lineHeight: '20px' }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-gray-500 font-medium">
                                         No category data available
@@ -145,19 +145,19 @@ export default function DashboardPage() {
                                                 paddingAngle={2}
                                                 dataKey="value"
                                             >
-                                                {Object.entries(stats.byLocation).map((entry, index) => (
+                                                {Object.entries(stats.byLocation).map((_, index) => (
                                                     <Cell key={`cell-${index}`} fill={LOCATION_COLORS[index % LOCATION_COLORS.length]} />
                                                 ))}
                                             </Pie>
-                                            <Tooltip 
-                                                formatter={(value: number) => [`${value} Assets`, 'Count']}
+                                            <Tooltip
+                                                formatter={(value: any) => [`${value} Assets`, 'Count']}
                                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', zIndex: 50 }}
                                             />
-                                            <Legend 
-                                                verticalAlign="bottom" 
-                                                height={80} 
-                                                iconType="circle" 
-                                                wrapperStyle={{ fontSize: '12px', paddingTop: '20px', lineHeight: '20px' }} 
+                                            <Legend
+                                                verticalAlign="bottom"
+                                                height={80}
+                                                iconType="circle"
+                                                wrapperStyle={{ fontSize: '12px', paddingTop: '20px', lineHeight: '20px' }}
                                             />
                                         </PieChart>
                                     </ResponsiveContainer>
@@ -184,7 +184,7 @@ export default function DashboardPage() {
                                     {stats.serviceReminders.length} Due Soon
                                 </span>
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {stats.serviceReminders.map(asset => (
                                     <Link key={asset.id} to={`/assets/${asset.id}`} className="block">
