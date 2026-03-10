@@ -25,6 +25,7 @@ export default function EditAssetPage() {
                         ...data,
                         purchaseDate: data.purchaseDate ? data.purchaseDate.toString().split('T')[0] : '',
                         warrantyEnd: data.warrantyEnd ? data.warrantyEnd.toString().split('T')[0] : '',
+                        nextServiceDate: data.nextServiceDate ? data.nextServiceDate.toString().split('T')[0] : '',
                     };
                     reset(formattedData);
                 } else {
@@ -157,6 +158,15 @@ export default function EditAssetPage() {
                                 <input
                                     type="date"
                                     {...register('purchaseDate')}
+                                    className="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                                />
+                            </div>
+
+                            <div className="sm:col-span-3">
+                                <label className="block text-sm font-medium leading-6 text-gray-900">Next Service Date</label>
+                                <input
+                                    type="date"
+                                    {...register('nextServiceDate')}
                                     className="mt-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
                                 />
                             </div>

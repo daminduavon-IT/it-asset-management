@@ -1,16 +1,19 @@
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
 export default function MainLayout() {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
     return (
         <div className="h-screen flex overflow-hidden bg-gray-100">
-            {/* Sidebar for Desktop */}
-            <Sidebar />
+            {/* Mobile off-canvas Sidebar and Desktop Sidebar */}
+            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             {/* Main Column */}
             <div className="flex flex-col w-0 flex-1 overflow-hidden">
-                <Topbar />
+                <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
 
                 <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
                     <div className="py-6">

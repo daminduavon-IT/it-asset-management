@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Edit, Eye, Trash2, MonitorSmartphone, UploadCloud } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Eye, Trash2, MonitorSmartphone, UploadCloud, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Asset } from '../../types';
 import { getAssets, deleteAsset, bulkImportAssets } from '../../config/assetService';
@@ -12,6 +12,10 @@ export default function AssetsPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [importing, setImporting] = useState(false);
+    
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     const fetchAssets = async () => {
         try {
@@ -60,6 +64,48 @@ export default function AssetsPage() {
         }
     };
 
+    useEffect(() => {
+        setCurrentPage(1); // Reset to first page when search changes
+    }, [searchTerm]);
+
+    const handleExportCode = () => {
+        try {
+            const csvRows = [];
+            const headers = ['Name', 'Ref Number', 'Serial Number', 'Category', 'Brand', 'Model', 'Status', 'Location', 'Assigned To'];
+            csvRows.push(headers.join(','));
+
+            for (const asset of filteredAssets) {
+                const values = [
+                    `"${asset.assetName || ''}"`,
+                    `"${asset.refNumber || ''}"`,
+                    `"${asset.serialNumber || ''}"`,
+                    `"${asset.category || ''}"`,
+                    `"${asset.brand || ''}"`,
+                    `"${asset.model || ''}"`,
+                    `"${asset.status || ''}"`,
+                    `"${asset.location || ''}"`,
+                    `"${asset.assignedTo || ''}"`
+                ];
+                csvRows.push(values.join(','));
+            }
+
+            const csvData = csvRows.join('\n');
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'it_assets_export.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            toast.success('Export successful!');
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.error('Failed to export assets');
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'Available': return 'bg-blue-100 text-blue-800';
@@ -80,6 +126,11 @@ export default function AssetsPage() {
         );
     });
 
+    // Pagination logic
+    const totalPages = Math.ceil(filteredAssets.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedAssets = filteredAssets.slice(startIndex, startIndex + itemsPerPage);
+
     // Use inline loading within the table body layout instead
 
     return (
@@ -91,20 +142,29 @@ export default function AssetsPage() {
                         A comprehensive list of all company IT equipment.
                     </p>
                 </div>
-                <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex items-center gap-3">
+                <div className="mt-4 sm:ml-16 sm:mt-0 flex flex-wrap items-center gap-3 justify-end">
                     {assets.length === 0 && ( /* Only show import if DB is empty to avoid accidental imports */
                         <button
                             onClick={handleImport}
                             disabled={importing}
-                            className="inline-flex items-center gap-2 justify-center rounded-lg bg-white border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-colors disabled:opacity-50"
+                            className="inline-flex items-center gap-2 justify-center rounded-lg bg-white border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-all active:scale-95 disabled:opacity-50"
                         >
                             <UploadCloud className="h-4 w-4" />
                             {importing ? 'Importing...' : 'Import Master Sheet'}
                         </button>
                     )}
+                    {assets.length > 0 && (
+                        <button
+                            onClick={handleExportCode}
+                            className="inline-flex items-center gap-2 justify-center rounded-lg bg-white border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-all active:scale-95"
+                        >
+                            <Download className="h-4 w-4" />
+                            Export CSV
+                        </button>
+                    )}
                     <Link
                         to="/assets/add"
-                        className="inline-flex items-center gap-2 justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 transition-colors"
+                        className="inline-flex items-center gap-2 justify-center rounded-lg bg-[#005500] px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-emerald-800 transition-all hover:shadow-lg active:scale-95"
                     >
                         <Plus className="h-4 w-4" />
                         Add New Asset
@@ -160,8 +220,8 @@ export default function AssetsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredAssets.map((asset) => (
-                                        <tr key={asset.id} className="hover:bg-gray-50 transition-colors group">
+                                    {paginatedAssets.map((asset) => (
+                                        <tr key={asset.id} className="hover:bg-emerald-50/50 transition-all duration-200 group">
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-medium text-gray-900">{asset.assetName}</span>
@@ -216,6 +276,47 @@ export default function AssetsPage() {
                                 </div>
                             )}
                         </div>
+                        
+                        {/* Pagination Footer */}
+                        {filteredAssets.length > 0 && (
+                            <div className="bg-white px-4 py-3 border-t border-gray-200 flex items-center justify-between sm:px-6">
+                                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-700">
+                                            Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                                            <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredAssets.length)}</span> of{' '}
+                                            <span className="font-medium">{filteredAssets.length}</span> results
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                            <button
+                                                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                                disabled={currentPage === 1}
+                                                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <span className="sr-only">Previous</span>
+                                                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                                            </button>
+                                            
+                                            {/* Simple page indicator instead of full array to save space */}
+                                            <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                                Page {currentPage} of {totalPages}
+                                            </span>
+
+                                            <button
+                                                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                                disabled={currentPage === totalPages}
+                                                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <span className="sr-only">Next</span>
+                                                <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                                            </button>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </>
             )}

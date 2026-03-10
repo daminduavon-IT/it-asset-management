@@ -79,8 +79,14 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
         availableAssets: 0,
         underRepair: 0,
         byCategory: {},
-        byLocation: {}
+        byLocation: {},
+        serviceReminders: []
     };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thirtyDaysFromNow = new Date(today);
+    thirtyDaysFromNow.setDate(today.getDate() + 30);
 
     assets.forEach(asset => {
         // Status counts
@@ -97,6 +103,20 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
         if (asset.location) {
             stats.byLocation[asset.location] = (stats.byLocation[asset.location] || 0) + 1;
         }
+
+        // Service Reminders
+        if (asset.nextServiceDate) {
+            const serviceDate = new Date(asset.nextServiceDate);
+            serviceDate.setHours(0, 0, 0, 0);
+            if (serviceDate <= thirtyDaysFromNow) {
+                stats.serviceReminders.push(asset);
+            }
+        }
+    });
+
+    // Sort reminders by date (most urgent first)
+    stats.serviceReminders.sort((a, b) => {
+        return new Date(a.nextServiceDate as string).getTime() - new Date(b.nextServiceDate as string).getTime();
     });
 
     return stats;

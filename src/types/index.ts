@@ -19,6 +19,7 @@ export interface Asset {
     condition: AssetCondition;
     purchaseDate: string; // ISO string format
     warrantyEnd: string; // ISO string format
+    nextServiceDate?: string; // ISO string format
     remarks?: string;
     createdAt: number;
     updatedAt: number;
@@ -31,6 +32,7 @@ export interface DashboardStats {
     underRepair: number;
     byCategory: Record<string, number>;
     byLocation: Record<string, number>;
+    serviceReminders: Asset[];
 }
 
 export interface User {
