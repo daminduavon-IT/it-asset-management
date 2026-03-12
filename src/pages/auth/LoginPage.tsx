@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { logLoginAttempt } from '../../services/logService';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -17,11 +18,29 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            
+            // Log successful login
+            await logLoginAttempt(
+                userCredential.user.uid,
+                userCredential.user.displayName || 'Unknown',
+                email,
+                'SUCCESS'
+            );
+
             toast.success('Login successful!');
             navigate('/');
         } catch (error: any) {
             console.error('Login error:', error);
+            
+            // Log failed login
+            await logLoginAttempt(
+                null, // No UID for failed login usually
+                'Unknown',
+                email,
+                'FAILED'
+            );
+
             toast.error('Failed to log in. Please check your credentials.');
         } finally {
             setLoading(false);
@@ -58,7 +77,7 @@ export default function LoginPage() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#005500] focus:border-[#005500] sm:text-sm transition-colors"
-                                    placeholder="admin@avon.com"
+                                    placeholder="Enter your email"
                                 />
                             </div>
                         </div>
@@ -74,7 +93,7 @@ export default function LoginPage() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#005500] focus:border-[#005500] sm:text-sm transition-colors pr-10"
-                                    placeholder="••••••••"
+                                    placeholder="Enter your password"
                                 />
                                 <button
                                     type="button"

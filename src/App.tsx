@@ -13,6 +13,7 @@ import AssetsPage from './pages/assets/AssetsPage';
 import AddAssetPage from './pages/assets/AddAssetPage';
 import EditAssetPage from './pages/assets/EditAssetPage';
 import AssetDetailsPage from './pages/assets/AssetDetailsPage';
+import LogsPage from './pages/logs/LogsPage';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
               <Route path="/assets/add" element={<AddAssetPage />} />
               <Route path="/assets/edit/:id" element={<EditAssetPage />} />
               <Route path="/assets/:id" element={<AssetDetailsPage />} />
+              <Route path="/logs" element={<LogsPage />} />
             </Route>
           </Route>
 

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { logLogout } from '../services/logService';
 
 interface AuthContextType {
     currentUser: User | null;
@@ -33,7 +34,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return unsubscribe;
     }, []);
 
-    const logout = () => {
+    const logout = async () => {
+        if (currentUser) {
+            await logLogout(currentUser.uid);
+        }
         return firebaseSignOut(auth);
     };
 

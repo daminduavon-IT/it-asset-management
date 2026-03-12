@@ -11,7 +11,8 @@ import {
     serverTimestamp,
     writeBatch
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
+import { logSystemActivity } from '../services/logService';
 import type { Asset, DashboardStats } from '../types';
 
 const ASSETS_COLLECTION = 'assets';
@@ -49,6 +50,22 @@ export const createAsset = async (assetData: Omit<Asset, 'id' | 'createdAt' | 'u
     };
 
     const docRef = await addDoc(assetsRef, newAsset);
+
+    // Log the creation
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+        await logSystemActivity({
+            uid: currentUser.uid,
+            userName: currentUser.displayName || 'Unknown',
+            email: currentUser.email || 'Unknown',
+            action: 'CREATE',
+            module: 'Assets',
+            recordId: docRef.id,
+            recordName: (assetData as any).assetName || 'Unknown Asset',
+            newData: newAsset
+        });
+    }
+
     return docRef.id;
 };
 
@@ -60,13 +77,64 @@ export const updateAsset = async (id: string, assetData: Partial<Asset>) => {
         updatedAt: serverTimestamp()
     };
 
+    // Get old asset data before updating for logging
+    const oldAsset = await getAssetById(id);
+
     await updateDoc(docRef, updatedData);
+
+    // Log the update
+    const currentUser = auth.currentUser;
+    if (currentUser && oldAsset) {
+        // Simple check for changed fields
+        const changedFields = Object.keys(assetData).filter(
+            key => assetData[key as keyof Asset] !== oldAsset[key as keyof Asset]
+        );
+
+        // Determine specific action type based on changed fields
+        let actionStatus: 'UPDATE' | 'ASSIGN' | 'TRANSFER' = 'UPDATE';
+        if (changedFields.includes('assignedTo') && assetData.assignedTo) {
+            actionStatus = 'ASSIGN';
+        } else if (changedFields.includes('location')) {
+            actionStatus = 'TRANSFER';
+        }
+
+        await logSystemActivity({
+            uid: currentUser.uid,
+            userName: currentUser.displayName || 'Unknown',
+            email: currentUser.email || 'Unknown',
+            action: actionStatus,
+            module: 'Assets',
+            recordId: id,
+            recordName: updatedData.assetName || oldAsset.assetName || 'Unknown Asset',
+            oldData: oldAsset,
+            newData: updatedData,
+            changedFields
+        });
+    }
 };
 
 // Delete an asset
 export const deleteAsset = async (id: string) => {
     const docRef = doc(db, ASSETS_COLLECTION, id);
+    // Get old asset data before deleting
+    const oldAsset = await getAssetById(id);
+
     await deleteDoc(docRef);
+
+    // Log the deletion
+    const currentUser = auth.currentUser;
+    if (currentUser && oldAsset) {
+        await logSystemActivity({
+            uid: currentUser.uid,
+            userName: currentUser.displayName || 'Unknown',
+            email: currentUser.email || 'Unknown',
+            action: 'DELETE',
+            module: 'Assets',
+            recordId: id,
+            recordName: oldAsset.assetName || 'Unknown Asset',
+            oldData: oldAsset
+        });
+    }
 };
 
 // Get Dashboard Statistics
