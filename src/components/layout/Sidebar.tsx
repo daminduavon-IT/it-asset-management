@@ -12,7 +12,7 @@ const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'All Assets', href: '/assets', icon: MonitorSmartphone },
     { name: 'Add Asset', href: '/assets/add', icon: PlusSquare },
-    { name: 'Audit Logs', href: '/logs', icon: ShieldAlert },
+    { name: 'Audit Logs', href: '/audit-logs', icon: ShieldAlert },
 ];
 
 interface SidebarProps {
