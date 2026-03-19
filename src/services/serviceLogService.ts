@@ -7,7 +7,6 @@ import {
     deleteDoc,
     query,
     where,
-    orderBy,
     serverTimestamp
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
@@ -21,11 +20,15 @@ export const getServiceLogsByAsset = async (assetId: string): Promise<ServiceLog
     const logsRef = collection(db, SERVICE_LOGS_COLLECTION);
     const q = query(
         logsRef,
-        where('assetId', '==', assetId),
-        orderBy('serviceDate', 'desc')
+        where('assetId', '==', assetId)
     );
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() })) as ServiceLog[];
+    const logs = snap.docs.map(d => ({ id: d.id, ...d.data() })) as ServiceLog[];
+    
+    // Sort client-side to avoid needing a Firestore composite index
+    return logs.sort((a, b) => {
+        return new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime();
+    });
 };
 
 /** Add a new service record */
