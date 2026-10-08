@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 
 // Layout & Auth
 import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/common/ProtectedRoute';
+import ProtectedRoute, { EditorRoute } from './components/common/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
@@ -36,8 +36,10 @@ function App() {
               <Route element={<MainLayout />}>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/assets" element={<AssetsPage />} />
-                <Route path="/assets/add" element={<AddAssetPage />} />
-                <Route path="/assets/edit/:id" element={<EditAssetPage />} />
+                <Route element={<EditorRoute />}>
+                  <Route path="/assets/add" element={<AddAssetPage />} />
+                  <Route path="/assets/edit/:id" element={<EditAssetPage />} />
+                </Route>
                 <Route path="/assets/:id" element={<AssetDetailsPage />} />
                 <Route path="/audit-logs" element={<LogsPage />} />
               </Route>

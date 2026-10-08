@@ -1,4 +1,4 @@
-import { LogOut, Menu, User } from 'lucide-react';
+import { Eye, LogOut, Menu, User } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,7 +7,7 @@ interface TopbarProps {
 }
 
 export default function Topbar({ onOpenSidebar }: TopbarProps) {
-    const { currentUser, logout } = useAuth();
+    const { currentUser, isAuditor, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -38,6 +38,15 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
                     </h2>
                 </div>
                 <div className="ml-2 flex flex-shrink-0 items-center md:ml-6 gap-2 sm:gap-4">
+                    {isAuditor && (
+                        <span
+                            className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-300"
+                            title="This account can view everything but cannot add, edit or delete"
+                        >
+                            <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>Read-only<span className="hidden sm:inline"> · ISO Auditor</span></span>
+                        </span>
+                    )}
                     <div className="flex items-center gap-2 text-sm text-gray-700 bg-white/50 px-2 sm:px-4 py-1.5 rounded-full border border-gray-100 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow max-w-[120px] sm:max-w-none overflow-hidden">
                         <div className="h-6 w-6 flex-shrink-0 rounded-full bg-gradient-to-r from-[#005500] to-emerald-600 flex items-center justify-center text-white">
                             <User className="h-3.5 w-3.5" />

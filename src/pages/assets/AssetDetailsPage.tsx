@@ -15,11 +15,13 @@ import { formatDate, formatLKR } from '../../utils/format';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import AddServiceRecordModal from '../../components/common/AddServiceRecordModal';
+import { useAuth } from '../../context/auth-context';
 
 const LONG_DATE: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
 
 export default function AssetDetailsPage() {
     const { id } = useParams<{ id: string }>();
+    const { isAuditor } = useAuth();
     const [asset, setAsset] = useState<Asset | null>(null);
     const [serviceLogs, setServiceLogs] = useState<ServiceLog[]>([]);
     const [loading, setLoading] = useState(true);
@@ -163,15 +165,17 @@ export default function AssetDetailsPage() {
                             </div>
                         </div>
 
-                        <div className="flex-shrink-0">
-                            <Link
-                                to={`/assets/edit/${asset.id}`}
-                                className="inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 px-6 py-3 text-sm font-bold shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-emerald-900/50"
-                            >
-                                <Edit className="h-4 w-4" />
-                                Edit Asset
-                            </Link>
-                        </div>
+                        {!isAuditor && (
+                            <div className="flex-shrink-0">
+                                <Link
+                                    to={`/assets/edit/${asset.id}`}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 px-6 py-3 text-sm font-bold shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-emerald-900/50"
+                                >
+                                    <Edit className="h-4 w-4" />
+                                    Edit Asset
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -278,13 +282,15 @@ export default function AssetDetailsPage() {
                                 <p className="text-sm text-slate-500 mt-0.5">{serviceLogs.length} record{serviceLogs.length !== 1 ? 's' : ''}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setShowModal(true)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:scale-105 hover:shadow-xl transition-all duration-300"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Add Service Record
-                        </button>
+                        {!isAuditor && (
+                            <button
+                                onClick={() => setShowModal(true)}
+                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:scale-105 hover:shadow-xl transition-all duration-300"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Add Service Record
+                            </button>
+                        )}
                     </div>
 
                     {serviceLogs.length === 0 ? (
@@ -293,7 +299,9 @@ export default function AssetDetailsPage() {
                                 <Wrench className="h-8 w-8 text-slate-300" />
                             </div>
                             <p className="text-slate-500 font-medium">No service records yet</p>
-                            <p className="text-slate-400 text-sm mt-1">Click "Add Service Record" to log the first service.</p>
+                            {!isAuditor && (
+                                <p className="text-slate-400 text-sm mt-1">Click "Add Service Record" to log the first service.</p>
+                            )}
                         </div>
                     ) : (
                         <div className="divide-y divide-slate-100/50">
@@ -336,14 +344,16 @@ export default function AssetDetailsPage() {
                                             >
                                                 {expandedLog === log.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                                             </button>
-                                            <button
-                                                onClick={() => handleDeleteLog(log)}
-                                                className="p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                                                title="Delete record"
-                                                aria-label="Delete service record"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
+                                            {!isAuditor && (
+                                                <button
+                                                    onClick={() => handleDeleteLog(log)}
+                                                    className="p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                                                    title="Delete record"
+                                                    aria-label="Delete service record"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
 

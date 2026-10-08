@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Read-only accounts (custom claim role = "auditor", e.g. the ISO auditor) can view everything but change nothing
+    function isAuditor() {
+      return signedIn() && request.auth.token.get('role', '') == 'auditor';
+    }
+
+    function canEdit() {
+      return signedIn() && !isAuditor();
+    }
+
+    // 1. Assets
+    match /assets/{assetId} {
+      allow read: if signedIn();
+      allow write: if canEdit();
+    }
+
+    // 2. Service Logs
+    match /service_logs/{logId} {
+      allow read: if signedIn();
+      allow write: if canEdit();
+    }
+
+    // 3. Login Logs: every account records its own sign-ins and logout times; history cannot be deleted
+    match /login_logs/{logId} {
+      allow read, create: if signedIn();
+      allow update: if signedIn();
+      allow delete: if false;
+    }
+
+    // 4. Activity Logs (immutable): written by accounts that change data; never edited or deleted
+    match /activity_logs/{logId} {
+      allow read: if signedIn();
+      allow create: if canEdit();
+      allow update, delete: if false;
+    }
+  }
+}

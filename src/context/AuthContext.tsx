@@ -7,12 +7,21 @@ import { AuthContext } from './auth-context';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [isAuditor, setIsAuditor] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         // Fires once with the restored session (or null), then on every sign-in/out
-        return onAuthStateChanged(auth, (user) => {
+        return onAuthStateChanged(auth, async (user) => {
+            let role: unknown;
+            try {
+                role = user ? (await user.getIdTokenResult()).claims.role : undefined;
+            } catch (error) {
+                // The database rules still enforce the role; this only drives what the UI offers
+                console.error('Could not read account role:', error);
+            }
             setCurrentUser(user);
+            setIsAuditor(role === 'auditor');
             setLoading(false);
         });
     }, []);
@@ -26,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const value = {
         currentUser,
+        isAuditor,
         loading,
         logout
     };

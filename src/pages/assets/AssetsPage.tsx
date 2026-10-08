@@ -8,6 +8,7 @@ import { STATUSES } from '../../constants/assets';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import importedAssets from '../../data/imported-assets.json';
+import { useAuth } from '../../context/auth-context';
 
 type Filters = { status: string; category: string; location: string };
 
@@ -25,6 +26,7 @@ const distinctValues = (assets: Asset[], key: 'category' | 'location') =>
 
 export default function AssetsPage() {
     usePageTitle('All Assets');
+    const { isAuditor } = useAuth();
     const [assets, setAssets] = useState<Asset[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
@@ -189,7 +191,7 @@ export default function AssetsPage() {
                     </p>
                 </div>
                 <div className="mt-4 sm:ml-16 sm:mt-0 flex flex-wrap items-center gap-3 justify-end">
-                    {!loading && !loadError && assets.length === 0 && ( /* Only show import if DB is confirmed empty to avoid duplicate imports */
+                    {!isAuditor && !loading && !loadError && assets.length === 0 && ( /* Only show import if DB is confirmed empty to avoid duplicate imports */
                         <button
                             onClick={handleImport}
                             disabled={importing}
@@ -208,13 +210,15 @@ export default function AssetsPage() {
                             Export CSV
                         </button>
                     )}
-                    <Link
-                        to="/assets/add"
-                        className="inline-flex items-center gap-2 justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300 active:scale-95"
-                    >
-                        <Plus className="h-5 w-5" />
-                        Add New Asset
-                    </Link>
+                    {!isAuditor && (
+                        <Link
+                            to="/assets/add"
+                            className="inline-flex items-center gap-2 justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300 active:scale-95"
+                        >
+                            <Plus className="h-5 w-5" />
+                            Add New Asset
+                        </Link>
+                    )}
                 </div>
             </div>
 
@@ -362,17 +366,21 @@ export default function AssetsPage() {
                                                     <Link to={`/assets/${asset.id}`} className="text-blue-600 hover:text-blue-900" title="View Details" aria-label={`View ${asset.assetName}`}>
                                                         <Eye className="h-4 w-4" />
                                                     </Link>
-                                                    <Link to={`/assets/edit/${asset.id}`} className="text-emerald-600 hover:text-emerald-900" title="Edit Asset" aria-label={`Edit ${asset.assetName}`}>
-                                                        <Edit className="h-4 w-4" />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => handleDelete(asset)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                        title="Delete Asset"
-                                                        aria-label={`Delete ${asset.assetName}`}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
+                                                    {!isAuditor && (
+                                                        <>
+                                                            <Link to={`/assets/edit/${asset.id}`} className="text-emerald-600 hover:text-emerald-900" title="Edit Asset" aria-label={`Edit ${asset.assetName}`}>
+                                                                <Edit className="h-4 w-4" />
+                                                            </Link>
+                                                            <button
+                                                                onClick={() => handleDelete(asset)}
+                                                                className="text-red-600 hover:text-red-900"
+                                                                title="Delete Asset"
+                                                                aria-label={`Delete ${asset.assetName}`}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

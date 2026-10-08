@@ -20,3 +20,9 @@ export default function ProtectedRoute() {
     // If user is logged in, show the child components (the protected pages)
     return <Outlet />;
 }
+
+/** Pages that change data (add/edit asset); read-only auditors are sent back to the asset list */
+export function EditorRoute() {
+    const { isAuditor } = useAuth();
+    return isAuditor ? <Navigate to="/assets" replace /> : <Outlet />;
+}
