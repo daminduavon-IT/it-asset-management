@@ -1,10 +1,10 @@
-import { NavLink } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
     MonitorSmartphone,
     PlusSquare,
     ShieldAlert,
-    Settings,
     X
 } from 'lucide-react';
 
@@ -20,34 +20,49 @@ interface SidebarProps {
     onClose?: () => void;
 }
 
+// "All Assets" covers the list, details and edit pages, but not "Add Asset" (which also lives under /assets)
+const isNavItemActive = (href: string, pathname: string) => {
+    if (href === '/') return pathname === '/';
+    if (href === '/assets') return pathname.startsWith('/assets') && pathname !== '/assets/add';
+    return pathname.startsWith(href);
+};
+
 export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
+    const { pathname } = useLocation();
+
+    // Escape closes the mobile menu
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose?.();
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => document.removeEventListener('keydown', onKeyDown);
+    }, [isOpen, onClose]);
+
     // Shared navigation renderer to keep code DRY
     const renderNavItems = () => (
         <nav className="mt-6 flex-1 px-3 space-y-2">
             {navigation.map((item) => {
                 const Icon = item.icon;
+                const isActive = isNavItemActive(item.href, pathname);
                 return (
-                    <NavLink
+                    <Link
                         key={item.name}
                         to={item.href}
+                        aria-current={isActive ? 'page' : undefined}
                         onClick={onClose} // Auto-close on mobile when clicking a link
-                        className={({ isActive }) =>
-                            `group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${isActive
-                                ? 'bg-gradient-to-r from-[#F29100] to-[#FDB913] text-white shadow-md'
-                                : 'text-emerald-100 hover:bg-[#003a00]/80 hover:text-white hover:translate-x-1'
-                            }`
-                        }
+                        className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-300 ${isActive
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30'
+                            : 'text-slate-300 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-sm'
+                        }`}
                     >
-                        {({ isActive }) => (
-                            <>
-                                <Icon
-                                    className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? 'text-white' : 'text-emerald-300 group-hover:text-emerald-100'}`}
-                                    aria-hidden="true"
-                                />
-                                {item.name}
-                            </>
-                        )}
-                    </NavLink>
+                        <Icon
+                            className={`mr-3 flex-shrink-0 h-5 w-5 transition-transform duration-300 ${isActive ? 'text-white scale-110' : 'text-slate-400 group-hover:text-slate-200 group-hover:scale-110'}`}
+                            aria-hidden="true"
+                        />
+                        {item.name}
+                    </Link>
                 );
             })}
         </nav>
@@ -57,16 +72,16 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         <>
             {/* Mobile Off-Canvas Menu overlay */}
             {isOpen && (
-                <div className="fixed inset-0 z-40 flex lg:hidden">
+                <div className="fixed inset-0 z-40 flex lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu">
                     {/* Background darkening overlay */}
-                    <div 
-                        className="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm transition-opacity" 
+                    <div
+                        className="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity"
                         onClick={onClose}
                         aria-hidden="true"
                     ></div>
 
                     {/* Sliding sidebar */}
-                    <div className="relative flex-1 flex flex-col max-w-xs w-full bg-[#004e00]/95 backdrop-blur-xl border-r border-[#003a00] transform transition duration-300 ease-in-out shadow-2xl">
+                    <div className="relative flex-1 flex flex-col max-w-xs w-full bg-slate-900/95 backdrop-blur-2xl border-r border-white/10 transform transition duration-300 ease-in-out shadow-2xl">
                         <div className="absolute top-0 right-0 -mr-12 pt-2">
                             <button
                                 type="button"
@@ -80,25 +95,13 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
                         <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
                             <div className="flex items-center justify-center flex-shrink-0 px-4 mb-2">
-                                <img 
-                                    src="/avon-logo.png" 
-                                    alt="Avon Pharmo Chem Logo" 
-                                    className="h-12 w-auto object-contain bg-white/10 p-2 rounded-xl border border-white/20" 
+                                <img
+                                    src="/avon-logo-sm.png"
+                                    alt="Avon Pharmo Chem Logo"
+                                    className="h-12 w-auto object-contain bg-white/10 p-2 rounded-xl border border-white/20"
                                 />
                             </div>
                             {renderNavItems()}
-                        </div>
-                        
-                        {/* Settings footer for mobile */}
-                        <div className="flex-shrink-0 flex bg-[#003a00]/95 p-4 border-t border-[#002f00]">
-                            <a href="#" className="flex-shrink-0 w-full group block">
-                                <div className="flex items-center">
-                                    <Settings className="inline-block h-8 w-8 rounded-full text-emerald-400 group-hover:text-[#FDB913] transition-colors duration-200 transform group-hover:rotate-45" />
-                                    <div className="ml-3">
-                                        <p className="text-sm font-medium text-white">System Settings</p>
-                                    </div>
-                                </div>
-                            </a>
                         </div>
                     </div>
                     {/* Dummy element to force sidebar to shrink to fit close icon */}
@@ -107,32 +110,20 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             )}
 
             {/* Desktop Static Sidebar */}
-            <div className="hidden lg:flex lg:flex-shrink-0 shadow-lg relative z-20">
-                <div className="flex flex-col w-64 bg-[#004e00]/95 backdrop-blur-xl border-r border-[#003a00]">
+            <div className="hidden lg:flex lg:flex-shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] relative z-20">
+                <div className="flex flex-col w-64 bg-slate-900/95 backdrop-blur-2xl border-r border-white/10">
                     <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
                         <div className="flex items-center justify-center flex-shrink-0 px-4 mb-2">
-                            <img 
-                                src="/avon-logo.png" 
-                                alt="Avon Pharmo Chem Logo" 
-                                className="h-12 w-auto object-contain bg-white/10 p-2 rounded-xl border border-white/20" 
+                            <img
+                                src="/avon-logo-sm.png"
+                                alt="Avon Pharmo Chem Logo"
+                                className="h-12 w-auto object-contain bg-white/10 p-2 rounded-xl border border-white/20"
                             />
                         </div>
                         {renderNavItems()}
                     </div>
-                    <div className="flex-shrink-0 flex bg-[#003a00]/95 p-4 border-t border-[#002f00]">
-                        <a href="#" className="flex-shrink-0 w-full group block">
-                            <div className="flex items-center">
-                                <div>
-                                    <Settings className="inline-block h-8 w-8 rounded-full text-emerald-400 group-hover:text-[#FDB913] transition-colors duration-200 transform group-hover:rotate-45" />
-                                </div>
-                                <div className="ml-3">
-                                    <p className="text-sm font-medium text-white">System Settings</p>
-                                    <p className="text-xs font-medium text-emerald-300 group-hover:text-emerald-100 transition-colors">
-                                        View configuration
-                                    </p>
-                                </div>
-                            </div>
-                        </a>
+                    <div className="flex-shrink-0 px-4 py-4 border-t border-white/10 text-xs text-slate-500">
+                        Avon Pharmo Chem · IT Asset Management
                     </div>
                 </div>
             </div>

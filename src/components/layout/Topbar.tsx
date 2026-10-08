@@ -1,5 +1,5 @@
 import { LogOut, Menu, User } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 import { useNavigate } from 'react-router-dom';
 
 interface TopbarProps {
@@ -20,7 +20,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
     };
 
     return (
-        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 shadow-sm sticky top-0 transition-all">
+        <div className="relative z-30 flex-shrink-0 flex h-16 glass-panel sticky top-0 transition-all border-b-0">
             <button
                 type="button"
                 onClick={onOpenSidebar}
@@ -33,7 +33,7 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
             <div className="flex-1 px-4 flex justify-between h-full items-center min-w-0">
                 <div className="flex-1 flex min-w-0 overflow-hidden">
                     <h2 className="text-lg font-bold text-gray-800 lg:hidden flex items-center gap-2 truncate">
-                        <img src="/avon-logo.png" className="h-8 w-8 object-contain flex-shrink-0" alt="Logo" />
+                        <img src="/avon-logo-sm.png" className="h-8 w-8 object-contain flex-shrink-0" alt="Logo" />
                         <span className="truncate">AVON IT</span>
                     </h2>
                 </div>

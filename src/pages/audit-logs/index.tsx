@@ -1,68 +1,63 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
+import { Activity, LogIn, Clock, Shield, Monitor, Globe, RotateCw } from 'lucide-react';
+import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { Activity, LogIn, Clock, Shield, Monitor, Globe } from 'lucide-react';
+import { usePageTitle } from '../../hooks/usePageTitle';
+import { formatDateTime as formatDate } from '../../utils/format';
+import type { ActivityLog, LoginLog } from '../../types';
 
-interface LoginLog {
-    id: string;
-    uid: string;
-    userName: string;
-    email: string;
-    loginTime: any;
-    logoutTime: any;
-    loginStatus: string;
-    sessionId: string;
-    browser: string;
-    os: string;
-    deviceInfo: string;
-}
+const ACTION_COLORS: Record<string, string> = {
+    CREATE: '#10B981',
+    IMPORT: '#10B981',
+    DELETE: '#EF4444',
+    ASSIGN: '#3B82F6',
+    TRANSFER: '#8B5CF6',
+};
 
-interface ActivityLog {
-    id: string;
-    uid: string;
-    userName: string;
-    email: string;
-    action: string;
-    module: string;
-    recordId: string;
-    recordName: string;
-    timestamp: any;
-    changedFields?: string[];
-}
+const latest = async <T,>(collectionName: string, timeField: string) => {
+    const snapshot = await getDocs(query(collection(db, collectionName), orderBy(timeField, 'desc'), limit(100)));
+    return snapshot.docs.map(d => ({ ...d.data(), id: d.id }) as T);
+};
+
+const changedFieldsText = (changedFields: ActivityLog['changedFields']) =>
+    Array.isArray(changedFields) && changedFields.length > 0 ? changedFields.join(', ') : '';
 
 export default function LogsPage() {
+    usePageTitle('Audit Logs');
     const [activeTab, setActiveTab] = useState<'login' | 'activity'>('login');
     const [loginLogs, setLoginLogs] = useState<LoginLog[]>([]);
     const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
-        fetchLogs();
-    }, [activeTab]);
+        let ignore = false;
 
-    const fetchLogs = async () => {
-        setLoading(true);
-        try {
-            if (activeTab === 'login') {
-                const q = query(collection(db, 'login_logs'), orderBy('loginTime', 'desc'), limit(100));
-                const snapshot = await getDocs(q);
-                setLoginLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LoginLog)));
-            } else {
-                const q = query(collection(db, 'activity_logs'), orderBy('timestamp', 'desc'), limit(100));
-                const snapshot = await getDocs(q);
-                setActivityLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog)));
+        const fetchLogs = async () => {
+            setLoading(true);
+            setLoadError(false);
+            try {
+                if (activeTab === 'login') {
+                    const data = await latest<LoginLog>('login_logs', 'loginTime');
+                    if (!ignore) setLoginLogs(data);
+                } else {
+                    const data = await latest<ActivityLog>('activity_logs', 'timestamp');
+                    if (!ignore) setActivityLogs(data);
+                }
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                if (!ignore) setLoadError(true);
+            } finally {
+                if (!ignore) setLoading(false);
             }
-        } catch (error) {
-            console.error('Error fetching logs:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
 
-    const formatDate = (timestamp: any) => {
-        if (!timestamp) return '-';
-        return new Date(timestamp.seconds * 1000).toLocaleString();
-    };
+        fetchLogs();
+        return () => {
+            ignore = true;
+        };
+    }, [activeTab, reloadKey]);
 
     return (
         <div className="space-y-6">
@@ -75,8 +70,10 @@ export default function LogsPage() {
 
             {/* Tabs */}
             <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
+                <nav className="-mb-px flex space-x-8" role="tablist">
                     <button
+                        role="tab"
+                        aria-selected={activeTab === 'login'}
                         onClick={() => setActiveTab('login')}
                         className={`${
                             activeTab === 'login'
@@ -88,6 +85,8 @@ export default function LogsPage() {
                         Login History
                     </button>
                     <button
+                        role="tab"
+                        aria-selected={activeTab === 'activity'}
                         onClick={() => setActiveTab('activity')}
                         className={`${
                             activeTab === 'activity'
@@ -105,6 +104,17 @@ export default function LogsPage() {
             <div className="bg-white shadow rounded-lg overflow-hidden">
                 {loading ? (
                     <div className="p-8 text-center text-gray-500">Loading logs...</div>
+                ) : loadError ? (
+                    <div role="alert" className="p-8 text-center space-y-3">
+                        <p className="text-sm text-gray-700">Failed to load logs. Check your connection and try again.</p>
+                        <button
+                            onClick={() => setReloadKey(key => key + 1)}
+                            className="inline-flex items-center gap-2 rounded-lg bg-[#005500] px-4 py-2 text-sm font-semibold text-white"
+                        >
+                            <RotateCw className="h-4 w-4" />
+                            Try again
+                        </button>
+                    </div>
                 ) : activeTab === 'login' ? (
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -149,8 +159,8 @@ export default function LogsPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <div className="flex flex-col space-y-1">
-                                                <span className="flex items-center"><Globe className="mr-1.5 h-3 w-3" /> {log.browser}</span>
-                                                <span className="flex items-center"><Monitor className="mr-1.5 h-3 w-3" /> {log.os}</span>
+                                                <span className="flex items-center"><Globe className="mr-1.5 h-3 w-3" /> {log.browser || '-'}</span>
+                                                <span className="flex items-center"><Monitor className="mr-1.5 h-3 w-3" /> {log.os || '-'}</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -176,39 +186,39 @@ export default function LogsPage() {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {activityLogs.map((log) => (
-                                    <tr key={log.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-l-4" 
-                                            style={{ borderLeftColor: 
-                                                log.action === 'CREATE' ? '#10B981' : 
-                                                log.action === 'DELETE' ? '#EF4444' : 
-                                                log.action === 'ASSIGN' ? '#3B82F6' :
-                                                log.action === 'TRANSFER' ? '#8B5CF6' : '#F59E0B' 
-                                            }}>
-                                            {formatDate(log.timestamp)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{log.userName}</div>
-                                            <div className="text-sm text-gray-500">{log.email}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                                {log.action}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900 font-medium">{log.recordName}</div>
-                                            <div className="text-xs text-gray-500">ID: {log.recordId.substring(0, 8)}...</div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                                            {log.changedFields?.length ? (
-                                                <span title={log.changedFields.join(', ')}>
-                                                    {log.changedFields.join(', ')}
+                                {activityLogs.map((log) => {
+                                    const changes = changedFieldsText(log.changedFields);
+                                    return (
+                                        <tr key={log.id} className="hover:bg-gray-50">
+                                            <td
+                                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-l-4"
+                                                style={{ borderLeftColor: ACTION_COLORS[log.action] ?? '#F59E0B' }}
+                                            >
+                                                {formatDate(log.timestamp)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900">{log.userName}</div>
+                                                <div className="text-sm text-gray-500">{log.email}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                    {log.action}
                                                 </span>
-                                            ) : '-'}
-                                        </td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900 font-medium">{log.recordName}</div>
+                                                <div className="text-xs text-gray-500">ID: {log.recordId?.substring(0, 8)}...</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                                                {changes || log.reason ? (
+                                                    <span title={[changes, log.reason].filter(Boolean).join(' — ')}>
+                                                        {[changes, log.reason].filter(Boolean).join(' — ')}
+                                                    </span>
+                                                ) : '-'}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                                 {activityLogs.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">No activity logs found</td>

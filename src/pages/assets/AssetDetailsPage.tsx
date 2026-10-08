@@ -1,38 +1,45 @@
 import { useState, useEffect, useCallback } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
     ArrowLeft, Edit, Calendar, DollarSign, MapPin, Tag, User,
     Info, Hash, Monitor, Activity, Building, Cpu, HardDrive,
-    MemoryStick, Laptop, Plus, Wrench, ChevronDown, ChevronUp, Trash2
+    MemoryStick, Laptop, Plus, Wrench, ChevronDown, ChevronUp, Trash2, ShieldCheck, Gauge
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Asset, ServiceLog } from '../../types';
 import { getAssetById } from '../../config/assetService';
 import { getServiceLogsByAsset, deleteServiceLog } from '../../services/serviceLogService';
+import { isComputerCategory, isServiceableCategory } from '../../constants/assets';
+import { formatDate, formatLKR } from '../../utils/format';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import AddServiceRecordModal from '../../components/common/AddServiceRecordModal';
 
-const COMPUTER_CATEGORIES = ['Laptop', 'Desktop'];
-const SERVICE_ELIGIBLE_CATEGORIES = ['Laptop', 'Desktop', 'Printer', 'UPS', 'Scanner', 'Photocopier'];
+const LONG_DATE: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
 
 export default function AssetDetailsPage() {
     const { id } = useParams<{ id: string }>();
     const [asset, setAsset] = useState<Asset | null>(null);
     const [serviceLogs, setServiceLogs] = useState<ServiceLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [expandedLog, setExpandedLog] = useState<string | null>(null);
+    usePageTitle(asset?.assetName ?? 'Asset Details');
 
-    const isComputerAsset = asset ? COMPUTER_CATEGORIES.includes(asset.category) : false;
-    const isServiceableAsset = asset ? SERVICE_ELIGIBLE_CATEGORIES.includes(asset.category) : false;
+    const isComputerAsset = isComputerCategory(asset?.category);
+    const isServiceableAsset = isServiceableCategory(asset?.category);
 
     const fetchAsset = useCallback(async () => {
         if (!id) return;
         try {
             const data = await getAssetById(id);
             setAsset(data);
+            setLoadError(false);
         } catch (error) {
             console.error('Failed to load asset', error);
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -45,6 +52,7 @@ export default function AssetDetailsPage() {
             setServiceLogs(logs);
         } catch (error) {
             console.error('Failed to load service logs', error);
+            toast.error('Failed to load service history');
         }
     }, [id]);
 
@@ -60,11 +68,12 @@ export default function AssetDetailsPage() {
 
     const handleServiceAdded = async () => {
         setShowModal(false);
-        await fetchServiceLogs();
+        // The record may have moved the asset's next service date
+        await Promise.all([fetchServiceLogs(), fetchAsset()]);
     };
 
     const handleDeleteLog = async (log: ServiceLog) => {
-        if (!confirm(`Delete service record "${log.serviceType}" from ${log.serviceDate}?`)) return;
+        if (!confirm(`Delete service record "${log.serviceType}" from ${formatDate(log.serviceDate)}?`)) return;
         try {
             await deleteServiceLog(log.id, log);
             toast.success('Service record deleted.');
@@ -84,26 +93,50 @@ export default function AssetDetailsPage() {
         }
     };
 
-    if (loading) return <LoadingSpinner fullScreen />;
+    if (loading) {
+        return (
+            <div className="py-20 flex justify-center">
+                <LoadingSpinner />
+            </div>
+        );
+    }
 
     if (!asset) {
         return (
-            <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100 max-w-2xl mx-auto mt-10">
-                <div className="bg-gray-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Monitor className="h-10 w-10 text-gray-400" />
+            <div className="text-center py-20 glass-card rounded-3xl max-w-2xl mx-auto mt-10">
+                <div className="bg-slate-100/50 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Monitor className="h-10 w-10 text-slate-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">Asset not found</h3>
-                <p className="text-gray-500 mt-2 mb-6">The asset you are looking for does not exist or has been removed.</p>
-                <Link to="/assets" className="inline-flex items-center gap-2 bg-[#005500] text-white px-6 py-2.5 rounded-lg hover:bg-emerald-800 transition-colors font-medium shadow-md">
-                    <ArrowLeft className="h-4 w-4" />
-                    Return to inventory
-                </Link>
+                <h3 className="text-xl font-bold text-slate-900">{loadError ? 'Could not load this asset' : 'Asset not found'}</h3>
+                <p className="text-slate-500 mt-2 mb-6">
+                    {loadError
+                        ? 'The inventory could not be reached. Check your connection and try again.'
+                        : 'The asset you are looking for does not exist or has been removed.'}
+                </p>
+                <div className="flex justify-center gap-3">
+                    {loadError && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setLoading(true);
+                                fetchAsset();
+                            }}
+                            className="rounded-xl bg-white border border-slate-200 px-6 py-2.5 font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                            Try again
+                        </button>
+                    )}
+                    <Link to="/assets" className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-6 py-2.5 rounded-xl hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/30 transition-all font-medium shadow-md">
+                        <ArrowLeft className="h-4 w-4" />
+                        Return to inventory
+                    </Link>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-6xl mx-auto space-y-8 pb-12 animate-fade-in-up">
             {/* Premium Header Banner */}
             <div className="bg-gradient-to-br from-[#005500] via-[#004400] to-emerald-900 rounded-[2rem] p-8 md:p-10 text-white shadow-2xl relative overflow-hidden ring-1 ring-white/10">
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-emerald-400 opacity-20 rounded-full blur-3xl pointer-events-none"></div>
@@ -119,7 +152,7 @@ export default function AssetDetailsPage() {
                             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">{asset.assetName}</h1>
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className={`px-4 py-1.5 rounded-full text-sm font-bold tracking-wide ${getStatusBadge(asset.status)}`}>
-                                    {asset.status.toUpperCase()}
+                                    {(asset.status || 'Unknown').toUpperCase()}
                                 </span>
                                 <span className="bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10 text-emerald-50 text-sm font-medium flex items-center gap-2 shadow-inner">
                                     <Tag className="h-3.5 w-3.5 text-emerald-300" /> Ref: {asset.refNumber}
@@ -133,7 +166,7 @@ export default function AssetDetailsPage() {
                         <div className="flex-shrink-0">
                             <Link
                                 to={`/assets/edit/${asset.id}`}
-                                className="inline-flex items-center gap-2 rounded-xl bg-white text-[#005500] hover:bg-emerald-50 px-6 py-3 text-sm font-bold shadow-xl transition-all hover:-translate-y-0.5"
+                                className="inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 px-6 py-3 text-sm font-bold shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-emerald-900/50"
                             >
                                 <Edit className="h-4 w-4" />
                                 Edit Asset
@@ -147,29 +180,30 @@ export default function AssetDetailsPage() {
                 {/* Main Info Columns */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Device Specifications */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
-                        <div className="px-8 py-6 border-b border-gray-50 flex items-center gap-4 bg-gradient-to-r from-emerald-50/50 to-transparent">
-                            <div className="p-3 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl text-[#005500] shadow-sm transform group-hover:scale-110 transition-transform">
+                    <div className="glass-card rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                        <div className="px-8 py-6 border-b border-slate-100/50 flex items-center gap-4 bg-gradient-to-r from-emerald-50/50 to-transparent">
+                            <div className="p-3 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl text-emerald-700 shadow-sm transform group-hover:scale-110 transition-transform">
                                 <Monitor className="h-6 w-6" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Device Specifications</h3>
+                            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Device Specifications</h3>
                         </div>
                         <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-10">
                             <InfoRow icon={Tag} label="Category" value={asset.category} />
-                            <InfoRow icon={Info} label="Brand & Model" value={`${asset.brand} ${asset.model}`} />
+                            <InfoRow icon={Info} label="Brand & Model" value={[asset.brand, asset.model].filter(Boolean).join(' ') || 'N/A'} />
                             <InfoRow icon={Hash} label="Serial Number" value={asset.serialNumber || 'N/A'} mono />
                             <InfoRow icon={Hash} label="Internal Reference" value={asset.refNumber} mono />
+                            <InfoRow icon={Gauge} label="Condition" value={asset.condition || 'Not recorded'} />
                         </div>
                     </div>
 
                     {/* Laptop/Desktop Specs Card */}
                     {isComputerAsset && (asset.processorType || asset.ram || asset.storage || asset.os) && (
-                        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
-                            <div className="px-8 py-6 border-b border-gray-50 flex items-center gap-4 bg-gradient-to-r from-purple-50/50 to-transparent">
+                        <div className="glass-card rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                            <div className="px-8 py-6 border-b border-slate-100/50 flex items-center gap-4 bg-gradient-to-r from-purple-50/50 to-transparent">
                                 <div className="p-3 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl text-purple-700 shadow-sm transform group-hover:scale-110 transition-transform">
                                     <Laptop className="h-6 w-6" />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 tracking-tight">Hardware Specifications</h3>
+                                <h3 className="text-xl font-bold text-slate-900 tracking-tight">Hardware Specifications</h3>
                             </div>
                             <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-10">
                                 {asset.processorType && <InfoRow icon={Cpu} label="Processor" value={asset.processorType} />}
@@ -181,23 +215,27 @@ export default function AssetDetailsPage() {
                     )}
 
                     {/* Financial Data */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
-                        <div className="px-8 py-6 border-b border-gray-50 flex items-center gap-4 bg-gradient-to-r from-orange-50/50 to-transparent">
+                    <div className="glass-card rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                        <div className="px-8 py-6 border-b border-slate-100/50 flex items-center gap-4 bg-gradient-to-r from-orange-50/50 to-transparent">
                             <div className="p-3 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl text-[#F29100] shadow-sm transform group-hover:scale-110 transition-transform">
                                 <DollarSign className="h-6 w-6" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Financial Data</h3>
+                            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Financial Data</h3>
                         </div>
                         <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-10">
                             <div>
-                                <dt className="text-sm font-semibold text-gray-500 mb-2 uppercase tracking-wider">Unit Price</dt>
+                                <dt className="text-sm font-semibold text-slate-500 mb-2 uppercase tracking-wider">Unit Price</dt>
                                 <dd className="text-3xl font-extrabold text-[#005500] drop-shadow-sm">
-                                    {asset.unitPrice ? `LKR ${asset.unitPrice.toLocaleString()}` : 'N/A'}
+                                    {formatLKR(asset.unitPrice)}
                                 </dd>
                             </div>
-                            <InfoRow icon={Calendar} label="Purchase Date" value={asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown'} />
+                            {asset.quantity > 1 && (
+                                <InfoRow icon={DollarSign} label={`Total Value (${asset.quantity} units)`} value={formatLKR(asset.totalValue)} />
+                            )}
+                            <InfoRow icon={Calendar} label="Purchase Date" value={formatDate(asset.purchaseDate, LONG_DATE) || 'Unknown'} />
+                            <InfoRow icon={ShieldCheck} label="Warranty End" value={formatDate(asset.warrantyEnd, LONG_DATE) || 'Unknown'} />
                             {asset.nextServiceDate && (
-                                <InfoRow icon={Calendar} label="Next Service Date" value={new Date(asset.nextServiceDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} highlight />
+                                <InfoRow icon={Calendar} label="Next Service Date" value={formatDate(asset.nextServiceDate, LONG_DATE)} highlight />
                             )}
                         </div>
                     </div>
@@ -205,14 +243,14 @@ export default function AssetDetailsPage() {
 
                 {/* Sidebar Column */}
                 <div className="space-y-8 lg:col-span-1">
-                    <div className="bg-gradient-to-b from-white to-gray-50/50 rounded-3xl shadow-sm border border-gray-100 overflow-hidden relative hover:shadow-lg transition-shadow duration-300 group">
+                    <div className="glass-panel bg-gradient-to-b from-white/60 to-slate-50/30 rounded-3xl overflow-hidden relative hover:shadow-xl transition-all duration-300 group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full pointer-events-none"></div>
 
-                        <div className="px-8 py-6 border-b border-gray-100/50 flex items-center gap-4 relative z-10">
+                        <div className="px-8 py-6 border-b border-slate-200/50 flex items-center gap-4 relative z-10">
                             <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl text-blue-600 shadow-sm transform group-hover:scale-110 transition-transform">
                                 <User className="h-6 w-6" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Allocation</h3>
+                            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Allocation</h3>
                         </div>
                         <div className="p-8 space-y-8 relative z-10">
                             <InfoRow icon={User} label="Assigned To" value={asset.assignedTo || 'Unassigned'} highlight />
@@ -229,20 +267,20 @@ export default function AssetDetailsPage() {
 
             {/* Service History Section — Serviceable Assets only */}
             {isServiceableAsset && (
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-teal-50/50 to-transparent">
+                <div className="glass-card rounded-3xl overflow-hidden">
+                    <div className="px-8 py-6 border-b border-slate-100/50 flex flex-wrap gap-4 items-center justify-between bg-gradient-to-r from-teal-50/50 to-transparent">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-gradient-to-br from-teal-100 to-teal-50 rounded-xl text-teal-700 shadow-sm">
                                 <Wrench className="h-6 w-6" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900 tracking-tight">Service History</h3>
-                                <p className="text-sm text-gray-500 mt-0.5">{serviceLogs.length} record{serviceLogs.length !== 1 ? 's' : ''}</p>
+                                <h3 className="text-xl font-bold text-slate-900 tracking-tight">Service History</h3>
+                                <p className="text-sm text-slate-500 mt-0.5">{serviceLogs.length} record{serviceLogs.length !== 1 ? 's' : ''}</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setShowModal(true)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-[#005500] text-white px-5 py-2.5 text-sm font-semibold shadow-md hover:bg-emerald-800 transition-all hover:-translate-y-0.5"
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-5 py-2.5 text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:scale-105 hover:shadow-xl transition-all duration-300"
                         >
                             <Plus className="h-4 w-4" />
                             Add Service Record
@@ -251,48 +289,50 @@ export default function AssetDetailsPage() {
 
                     {serviceLogs.length === 0 ? (
                         <div className="text-center py-16">
-                            <div className="bg-gray-50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Wrench className="h-8 w-8 text-gray-300" />
+                            <div className="bg-slate-50/50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Wrench className="h-8 w-8 text-slate-300" />
                             </div>
-                            <p className="text-gray-500 font-medium">No service records yet</p>
-                            <p className="text-gray-400 text-sm mt-1">Click "Add Service Record" to log the first service.</p>
+                            <p className="text-slate-500 font-medium">No service records yet</p>
+                            <p className="text-slate-400 text-sm mt-1">Click "Add Service Record" to log the first service.</p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-gray-50">
+                        <div className="divide-y divide-slate-100/50">
                             {serviceLogs.map(log => (
-                                <div key={log.id} className="px-8 py-5 hover:bg-gray-50/50 transition-colors">
+                                <div key={log.id} className="px-8 py-5 hover:bg-slate-50/50 transition-colors">
                                     {/* Collapsed Header Row */}
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex items-start gap-4 min-w-0">
-                                            <div className="flex-shrink-0 mt-1 p-2 bg-teal-50 rounded-lg">
+                                            <div className="flex-shrink-0 mt-1 p-2 bg-teal-50 rounded-xl">
                                                 <Wrench className="h-4 w-4 text-teal-600" />
                                             </div>
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-3 flex-wrap">
-                                                    <span className="font-semibold text-gray-900">{log.serviceType}</span>
+                                                    <span className="font-semibold text-slate-900">{log.serviceType}</span>
                                                     <span className="text-xs bg-teal-50 text-teal-700 px-2.5 py-1 rounded-full font-medium border border-teal-100">
-                                                        {new Date(log.serviceDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                        {formatDate(log.serviceDate)}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-4 mt-1.5 text-sm text-gray-500 flex-wrap">
+                                                <div className="flex items-center gap-4 mt-1.5 text-sm text-slate-500 flex-wrap">
                                                     {log.technicianName && <span>👤 {log.technicianName}</span>}
-                                                    {log.serviceCost !== undefined && log.serviceCost > 0 && (
-                                                        <span>💰 LKR {log.serviceCost.toLocaleString()}</span>
+                                                    {typeof log.serviceCost === 'number' && log.serviceCost > 0 && (
+                                                        <span>💰 {formatLKR(log.serviceCost)}</span>
                                                     )}
                                                     {log.nextServiceDate && (
-                                                        <span className="text-amber-600">🔔 Next: {new Date(log.nextServiceDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                                        <span className="text-amber-600">🔔 Next: {formatDate(log.nextServiceDate)}</span>
                                                     )}
                                                 </div>
                                                 {log.remarks && (
-                                                    <p className="text-sm text-gray-500 mt-1 italic">"{log.remarks}"</p>
+                                                    <p className="text-sm text-slate-500 mt-1 italic">"{log.remarks}"</p>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <button
                                                 onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
-                                                className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                                                className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
                                                 title="View details"
+                                                aria-label={expandedLog === log.id ? 'Hide service details' : 'Show service details'}
+                                                aria-expanded={expandedLog === log.id}
                                             >
                                                 {expandedLog === log.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                                             </button>
@@ -300,6 +340,7 @@ export default function AssetDetailsPage() {
                                                 onClick={() => handleDeleteLog(log)}
                                                 className="p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                                                 title="Delete record"
+                                                aria-label="Delete service record"
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
@@ -308,24 +349,27 @@ export default function AssetDetailsPage() {
 
                                     {/* Expanded Details */}
                                     {expandedLog === log.id && (
-                                        <div className="mt-4 ml-12 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                                        <div className="mt-4 ml-12 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/50 rounded-2xl p-5 border border-slate-100">
                                             {log.serviceDetails && (
                                                 <div className="sm:col-span-2">
-                                                    <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Service Details</dt>
-                                                    <dd className="text-sm text-gray-700">{log.serviceDetails}</dd>
+                                                    <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Service Details</dt>
+                                                    <dd className="text-sm text-slate-700">{log.serviceDetails}</dd>
                                                 </div>
                                             )}
                                             {log.partsReplaced && (
                                                 <div>
-                                                    <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Parts Replaced</dt>
-                                                    <dd className="text-sm text-gray-700">{log.partsReplaced}</dd>
+                                                    <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Parts Replaced</dt>
+                                                    <dd className="text-sm text-slate-700">{log.partsReplaced}</dd>
                                                 </div>
                                             )}
                                             {log.serviceProvider && (
                                                 <div>
-                                                    <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Service Provider</dt>
-                                                    <dd className="text-sm text-gray-700">{log.serviceProvider}</dd>
+                                                    <dt className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Service Provider</dt>
+                                                    <dd className="text-sm text-slate-700">{log.serviceProvider}</dd>
                                                 </div>
+                                            )}
+                                            {!log.serviceDetails && !log.partsReplaced && !log.serviceProvider && (
+                                                <p className="text-sm text-slate-500 sm:col-span-2">No further details recorded.</p>
                                             )}
                                         </div>
                                     )}
@@ -337,7 +381,7 @@ export default function AssetDetailsPage() {
             )}
 
             {/* Add Service Record Modal */}
-            {showModal && asset && (
+            {showModal && (
                 <AddServiceRecordModal
                     asset={{ id: asset.id, assetName: asset.assetName, category: asset.category }}
                     onClose={() => setShowModal(false)}
@@ -349,14 +393,20 @@ export default function AssetDetailsPage() {
 }
 
 // Helper component for consistent info rows
-function InfoRow({ icon: Icon, label, value, mono = false, highlight = false }: any) {
+function InfoRow({ icon: Icon, label, value, mono = false, highlight = false }: {
+    icon: ComponentType<{ className?: string }>;
+    label: string;
+    value: ReactNode;
+    mono?: boolean;
+    highlight?: boolean;
+}) {
     return (
         <div className="group/row">
-            <dt className="text-sm font-semibold text-gray-400 flex items-center gap-2 mb-2 uppercase tracking-wider group-hover/row:text-[#005500] transition-colors">
+            <dt className="text-sm font-semibold text-slate-400 flex items-center gap-2 mb-2 uppercase tracking-wider group-hover/row:text-emerald-600 transition-colors">
                 <Icon className="h-4 w-4 opacity-70" />
                 {label}
             </dt>
-            <dd className={`text-base ${highlight ? 'text-blue-700 font-bold text-xl' : 'text-gray-900 font-semibold text-lg'} ${mono ? 'font-mono bg-gray-100/80 px-3 py-1.5 inline-block rounded-lg border border-gray-200 text-sm shadow-inner' : ''}`}>
+            <dd className={`text-base ${highlight ? 'text-blue-700 font-bold text-xl' : 'text-slate-900 font-semibold text-lg'} ${mono ? 'font-mono bg-slate-100/50 px-3 py-1.5 inline-block rounded-lg border border-slate-200 text-sm shadow-inner' : ''}`}>
                 {value}
             </dd>
         </div>

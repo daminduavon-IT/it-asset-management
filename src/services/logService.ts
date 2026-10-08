@@ -1,9 +1,31 @@
-import { collection, addDoc, updateDoc, doc, serverTimestamp, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { addDoc, collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { getDeviceInfo } from '../utils/deviceInfo';
+import { toMillis } from '../utils/format';
+import type { ActivityAction } from '../types';
 
 const LOGIN_LOGS_COLLECTION = 'login_logs';
 const ACTIVITY_LOGS_COLLECTION = 'activity_logs';
+
+// Document id of this browser's login_logs entry, so logout closes this session and not another device's
+const LOGIN_LOG_KEY = 'itam.loginLogId';
+
+const rememberLoginLog = (id: string | null) => {
+  try {
+    if (id) localStorage.setItem(LOGIN_LOG_KEY, id);
+    else localStorage.removeItem(LOGIN_LOG_KEY);
+  } catch {
+    // storage unavailable — logout falls back to the most recent open session
+  }
+};
+
+const storedLoginLog = () => {
+  try {
+    return localStorage.getItem(LOGIN_LOG_KEY);
+  } catch {
+    return null;
+  }
+};
 
 /**
  * 1. Log a new login attempt (both successful and failed)
@@ -17,9 +39,8 @@ export const logLoginAttempt = async (
 ) => {
   try {
     const { browser, os, userAgent } = getDeviceInfo();
-    
-    const logsRef = collection(db, LOGIN_LOGS_COLLECTION);
-    const newDoc = await addDoc(logsRef, {
+
+    const newDoc = await addDoc(collection(db, LOGIN_LOGS_COLLECTION), {
       uid: uid || 'UNKNOWN',
       userName,
       email,
@@ -32,7 +53,8 @@ export const logLoginAttempt = async (
       os,
       createdAt: serverTimestamp()
     });
-    
+
+    if (status === 'SUCCESS') rememberLoginLog(newDoc.id);
     return { docId: newDoc.id, sessionId };
   } catch (error) {
     console.error('Error logging login attempt:', error);
@@ -45,30 +67,21 @@ export const logLoginAttempt = async (
  */
 export const logLogout = async (uid: string) => {
   try {
-    const logsRef = collection(db, LOGIN_LOGS_COLLECTION);
-    // Only filter by uid + loginStatus (no orderBy needed = no composite index required)
-    const q = query(
-      logsRef,
-      where('uid', '==', uid),
-      where('loginStatus', '==', 'SUCCESS'),
-      orderBy('loginTime', 'desc'),
-      limit(5) // Grab last 5, then pick the first one without a logout time
-    );
+    let sessionDocId = storedLoginLog();
 
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      // Find the most recent session that has no logout time yet
-      const activeSession = querySnapshot.docs.find(
-        doc => !doc.data().logoutTime
-      );
-
-      if (activeSession) {
-        await updateDoc(doc(db, LOGIN_LOGS_COLLECTION, activeSession.id), {
-          logoutTime: serverTimestamp()
-        });
-      }
+    if (!sessionDocId) {
+      // Single-field filter only, so no composite index is needed; newest open session wins
+      const snapshot = await getDocs(query(collection(db, LOGIN_LOGS_COLLECTION), where('uid', '==', uid)));
+      const openSession = snapshot.docs
+        .filter(d => d.data().loginStatus === 'SUCCESS' && !d.data().logoutTime)
+        .sort((a, b) => (toMillis(b.data().loginTime) ?? 0) - (toMillis(a.data().loginTime) ?? 0))[0];
+      sessionDocId = openSession?.id ?? null;
     }
+
+    if (sessionDocId) {
+      await updateDoc(doc(db, LOGIN_LOGS_COLLECTION, sessionDocId), { logoutTime: serverTimestamp() });
+    }
+    rememberLoginLog(null);
   } catch (error) {
     console.error('Error logging logout:', error);
   }
@@ -81,19 +94,18 @@ export const logSystemActivity = async (params: {
   uid: string;
   userName: string;
   email: string;
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'ASSIGN' | 'TRANSFER';
+  action: ActivityAction;
   module: string;
   recordId: string;
   recordName: string;
-  oldData?: any;
-  newData?: any;
+  oldData?: object | null;
+  newData?: object | null;
   changedFields?: string[];
   reason?: string;
   sessionId?: string;
 }) => {
   try {
-    const activityRef = collection(db, ACTIVITY_LOGS_COLLECTION);
-    await addDoc(activityRef, {
+    await addDoc(collection(db, ACTIVITY_LOGS_COLLECTION), {
       ...params,
       timestamp: serverTimestamp()
     });

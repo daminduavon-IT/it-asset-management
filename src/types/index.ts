@@ -1,3 +1,8 @@
+import type { Timestamp } from 'firebase/firestore';
+
+/** Firestore stores record times as Timestamps; older or hand-made documents may hold epoch ms or an ISO string. */
+export type StoredTime = Timestamp | number | string | null | undefined;
+
 export type AssetStatus = 'Available' | 'Assigned' | 'Under Repair' | 'Retired';
 export type AssetCondition = 'New' | 'Good' | 'Fair' | 'Poor';
 
@@ -18,23 +23,27 @@ export interface Asset {
     quantity: number;
     unitPrice: number;
     totalValue: number;
-    location: Location;
-    assignedTo?: string;
-    department: Department;
+    // Imported master-sheet rows use values outside the Location/Department lists (e.g. "1 st Floor", blank department)
+    location: string;
+    assignedTo?: string | null;
+    department: string;
     status: AssetStatus;
     condition: AssetCondition;
-    purchaseDate: string; // ISO string format
-    warrantyEnd: string; // ISO string format
-    nextServiceDate?: string; // ISO string format
-    remarks?: string;
-    // Laptop/Desktop spec fields (optional — other categories leave these undefined)
-    processorType?: string;
-    ram?: string;
-    storage?: string;
-    os?: string;
-    createdAt: number;
-    updatedAt: number;
+    purchaseDate: string; // "YYYY-MM-DD" or ''
+    warrantyEnd: string; // "YYYY-MM-DD" or ''
+    nextServiceDate?: string | null; // "YYYY-MM-DD"
+    remarks?: string | null;
+    // Laptop/Desktop spec fields (optional — other categories leave these null)
+    processorType?: string | null;
+    ram?: string | null;
+    storage?: string | null;
+    os?: string | null;
+    createdAt: StoredTime;
+    updatedAt: StoredTime;
 }
+
+/** Asset fields a user can enter (everything except id and timestamps). */
+export type AssetInput = Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>;
 
 export interface DashboardStats {
     totalAssets: number;
@@ -53,6 +62,8 @@ export interface User {
     displayName: string | null;
 }
 
+export type ActivityAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'ASSIGN' | 'TRANSFER' | 'IMPORT';
+
 export interface ServiceLog {
     id: string;
     assetId: string;
@@ -60,15 +71,45 @@ export interface ServiceLog {
     assetCategory: string;
     serviceDate: string;        // ISO date string e.g. "2026-03-13"
     serviceType: string;
-    serviceDetails?: string;
-    partsReplaced?: string;     // Plain string e.g. "Battery, Cooling Fan"
-    technicianName?: string;
-    serviceProvider?: string;
-    serviceCost?: number;
-    nextServiceDate?: string;   // ISO date string
-    remarks?: string;
-    createdAt: number;
-    updatedAt: number;
+    serviceDetails?: string | null;
+    partsReplaced?: string | null;     // Plain string e.g. "Battery, Cooling Fan"
+    technicianName?: string | null;
+    serviceProvider?: string | null;
+    serviceCost?: number | null;
+    nextServiceDate?: string | null;   // ISO date string
+    remarks?: string | null;
+    createdAt: StoredTime;
+    updatedAt: StoredTime;
     createdByUid: string;
     createdByName: string;
+}
+
+export interface LoginLog {
+    id: string;
+    uid: string;
+    userName: string;
+    email: string;
+    loginStatus: 'SUCCESS' | 'FAILED';
+    loginTime: StoredTime;
+    logoutTime?: StoredTime;
+    sessionId?: string | null;
+    deviceInfo?: string | null;
+    browser?: string | null;
+    os?: string | null;
+}
+
+export interface ActivityLog {
+    id: string;
+    uid: string;
+    userName: string;
+    email: string;
+    action: ActivityAction;
+    module: string;
+    recordId: string;
+    recordName: string;
+    oldData?: Record<string, unknown> | null;
+    newData?: Record<string, unknown> | null;
+    changedFields?: string[] | null;
+    reason?: string | null;
+    timestamp: StoredTime;
 }

@@ -1,44 +1,27 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
-import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { logLogout } from '../services/logService';
-
-interface AuthContextType {
-    currentUser: User | null;
-    loading: boolean;
-    logout: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function useAuth() {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
-}
+import { AuthContext } from './auth-context';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Listen for auth state changes
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        // Fires once with the restored session (or null), then on every sign-in/out
+        return onAuthStateChanged(auth, (user) => {
             setCurrentUser(user);
             setLoading(false);
         });
-
-        return unsubscribe;
     }, []);
 
     const logout = async () => {
         if (currentUser) {
             await logLogout(currentUser.uid);
         }
-        return firebaseSignOut(auth);
+        await signOut(auth);
     };
 
     const value = {
