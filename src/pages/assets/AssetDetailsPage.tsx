@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
     ArrowLeft, Edit, Calendar, DollarSign, MapPin, Tag, User,
     Info, Hash, Monitor, Activity, Building, Cpu, HardDrive,
-    MemoryStick, Laptop, Plus, Wrench, ChevronDown, ChevronUp, Trash2, ShieldCheck, Gauge
+    MemoryStick, Laptop, Plus, Wrench, ChevronDown, ChevronUp, Trash2, ShieldCheck, Gauge, Printer
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Asset, ServiceLog } from '../../types';
@@ -165,15 +165,26 @@ export default function AssetDetailsPage() {
                             </div>
                         </div>
 
-                        {!isAuditor && (
-                            <div className="flex-shrink-0">
-                                <Link
-                                    to={`/assets/edit/${asset.id}`}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 px-6 py-3 text-sm font-bold shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-emerald-900/50"
-                                >
-                                    <Edit className="h-4 w-4" />
-                                    Edit Asset
-                                </Link>
+                        {(isComputerAsset || !isAuditor) && (
+                            <div className="flex-shrink-0 flex flex-wrap gap-3">
+                                {isComputerAsset && (
+                                    <Link
+                                        to={`/stickers?ids=${asset.id}`}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 px-6 py-3 text-sm font-bold shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-emerald-900/50"
+                                    >
+                                        <Printer className="h-4 w-4" />
+                                        Print Sticker
+                                    </Link>
+                                )}
+                                {!isAuditor && (
+                                    <Link
+                                        to={`/assets/edit/${asset.id}`}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 px-6 py-3 text-sm font-bold shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-emerald-900/50"
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                        Edit Asset
+                                    </Link>
+                                )}
                             </div>
                         )}
                     </div>

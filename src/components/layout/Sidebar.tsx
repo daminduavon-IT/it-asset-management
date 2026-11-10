@@ -5,6 +5,9 @@ import {
     MonitorSmartphone,
     PlusSquare,
     ShieldAlert,
+    Barcode,
+    KeyRound,
+    Users,
     X
 } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
@@ -13,7 +16,10 @@ const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'All Assets', href: '/assets', icon: MonitorSmartphone },
     { name: 'Add Asset', href: '/assets/add', icon: PlusSquare, editorOnly: true },
+    { name: 'Asset Stickers', href: '/stickers', icon: Barcode },
     { name: 'Audit Logs', href: '/audit-logs', icon: ShieldAlert },
+    { name: 'Users', href: '/users', icon: Users, adminOnly: true },
+    { name: 'Change Password', href: '/change-password', icon: KeyRound },
 ];
 
 interface SidebarProps {
@@ -30,7 +36,7 @@ const isNavItemActive = (href: string, pathname: string) => {
 
 export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     const { pathname } = useLocation();
-    const { isAuditor } = useAuth();
+    const { isAdmin, isAuditor } = useAuth();
 
     // Escape closes the mobile menu
     useEffect(() => {
@@ -45,7 +51,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     // Shared navigation renderer to keep code DRY
     const renderNavItems = () => (
         <nav className="mt-6 flex-1 px-3 space-y-2">
-            {navigation.filter(item => !(item.editorOnly && isAuditor)).map((item) => {
+            {navigation.filter(item => !(item.editorOnly && isAuditor) && !(item.adminOnly && !isAdmin)).map((item) => {
                 const Icon = item.icon;
                 const isActive = isNavItemActive(item.href, pathname);
                 return (

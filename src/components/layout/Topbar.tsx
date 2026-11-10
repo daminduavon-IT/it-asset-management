@@ -1,6 +1,6 @@
 import { Eye, LogOut, Menu, User } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface TopbarProps {
     onOpenSidebar?: () => void;
@@ -47,14 +47,19 @@ export default function Topbar({ onOpenSidebar }: TopbarProps) {
                             <span>Read-only<span className="hidden sm:inline"> · ISO Auditor</span></span>
                         </span>
                     )}
-                    <div className="flex items-center gap-2 text-sm text-gray-700 bg-white/50 px-2 sm:px-4 py-1.5 rounded-full border border-gray-100 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow max-w-[120px] sm:max-w-none overflow-hidden">
+                    <Link
+                        to="/change-password"
+                        title="Change password"
+                        className="flex items-center gap-2 text-sm text-gray-700 bg-white/50 px-2 sm:px-4 py-1.5 rounded-full border border-gray-100 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow max-w-[120px] sm:max-w-none overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#005500]"
+                    >
                         <div className="h-6 w-6 flex-shrink-0 rounded-full bg-gradient-to-r from-[#005500] to-emerald-600 flex items-center justify-center text-white">
                             <User className="h-3.5 w-3.5" />
                         </div>
                         <span className="hidden sm:inline-block font-medium">
                             {currentUser?.email || 'Admin User'}
                         </span>
-                    </div>
+                        <span className="sr-only">Change password</span>
+                    </Link>
 
                     <button
                         onClick={handleLogout}

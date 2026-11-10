@@ -62,6 +62,20 @@ export interface User {
     displayName: string | null;
 }
 
+/** What a sign-in may do: administrators also manage user accounts; auditors can view everything but change nothing. */
+export type AccountRole = 'admin' | 'editor' | 'auditor';
+
+/** Access profile of one sign-in (Firestore users/{uid}). Without an active profile an account has no access. */
+export interface UserAccount {
+    uid: string;
+    name: string;
+    email: string;
+    role: AccountRole;
+    active: boolean;
+    createdAt: StoredTime;
+    createdByName?: string | null;
+}
+
 export type ActivityAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'ASSIGN' | 'TRANSFER' | 'IMPORT';
 
 export interface ServiceLog {

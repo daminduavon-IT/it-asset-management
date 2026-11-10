@@ -46,3 +46,77 @@ body {
     @apply bg-white/60 backdrop-blur-lg border border-white/60 shadow-sm hover:shadow-lg hover:bg-white/80 transition-all duration-300;
   }
 }
+
+/* ---------- Asset stickers (sized in inches/points so they print at their real size) ---------- */
+.sticker {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  border: 1.5pt solid #0A3D14;
+  background: #FAFAFA;
+  color: #111111;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.2;
+  text-align: center;
+  break-inside: avoid;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.sticker-device { width: 3.5in; height: 2.2in; padding: 0.09in 0.12in 0.07in; }
+.sticker-charger { width: 2.33in; height: 1.5in; padding: 0.06in 0.08in 0.05in; }
+
+.sticker-head { display: flex; align-items: center; gap: 0.1in; width: 100%; }
+.sticker-head-text { flex: 1; min-width: 0; overflow: hidden; text-align: left; }
+.sticker-logo { flex: none; width: 1.02in; height: 0.47in; border-radius: 0.03in; }
+.sticker-owner { font-size: 7pt; font-weight: 700; color: #0A3D14; white-space: nowrap; }
+.sticker-name { font-size: 9.5pt; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sticker-line { font-size: 6.5pt; color: #333333; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sticker-details { width: 100%; }
+.sticker-code { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sticker-code-label { font-size: 10pt; font-weight: 700; }
+.sticker-code-value { font-family: Consolas, 'Courier New', monospace; font-size: 12pt; font-weight: 700; color: #B83E02; }
+.sticker-barcode { display: block; flex: none; }
+.sticker-support { font-size: 7pt; font-weight: 700; color: #333333; white-space: pre; }
+.sticker-warning { font-size: 6pt; color: #777777; }
+.sticker-chip {
+  display: inline-block;
+  margin-top: 0.02in;
+  padding: 0.01in 0.05in;
+  background: #0A3D14;
+  color: #ffffff;
+  font-size: 6pt;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.sticker-charger .sticker-head { gap: 0.07in; }
+.sticker-charger .sticker-logo { width: 0.68in; height: 0.313in; }
+.sticker-charger .sticker-owner { font-size: 5.2pt; }
+.sticker-charger .sticker-line { font-size: 5.5pt; }
+.sticker-charger .sticker-code-label { font-size: 7pt; }
+.sticker-charger .sticker-code-value { font-size: 9pt; }
+.sticker-charger .sticker-support { font-size: 5.5pt; }
+.sticker-charger .sticker-warning { font-size: 5pt; }
+
+/* ---------- Printed sticker sheet: rendered outside #root and only shown on paper ---------- */
+.print-sheet { display: none; }
+.print-page { break-after: page; font-family: Arial, Helvetica, sans-serif; color: #111111; }
+.print-page:last-child { break-after: auto; }
+.print-page-title { font-size: 11pt; font-weight: 700; color: #0A3D14; text-align: center; }
+.print-page-meta { margin: 0.03in 0 0.12in; font-size: 7.5pt; color: #555555; text-align: center; }
+.sticker-grid { display: grid; justify-content: center; }
+.sticker-grid-device { grid-template-columns: repeat(2, 3.5in); gap: 0.15in 0.25in; }
+.sticker-grid-charger { grid-template-columns: repeat(3, 2.33in); gap: 0.125in; }
+.print-log { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
+.print-log th, .print-log td { border: 0.75pt solid #999999; padding: 0.04in 0.06in; text-align: left; vertical-align: top; }
+.print-log th { background: #0A3D14; color: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.print-log tr { break-inside: avoid; }
+
+@media print {
+  body:has(> .print-sheet) { background: #ffffff; }
+  body:has(> .print-sheet) > #root { display: none !important; }
+  .print-sheet { display: block; }
+}

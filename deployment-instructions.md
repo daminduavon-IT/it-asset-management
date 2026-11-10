@@ -41,4 +41,7 @@ In the Firebase Console for the `it-asset-management-42c27` project:
 
 - **Authentication → Settings → Authorized domains**: add your Vercel domain, otherwise sign-in is blocked there.
 - **Authentication → Templates → Password reset** (optional): to use the app's own reset page, set the action URL to `https://<your-domain>/reset-password`. Otherwise Firebase's hosted page handles "Forgot your password?" links.
-- **Firestore → Rules**: only signed-in users should read and write; accounts should only be created by an admin (Authentication → Users → Add user).
+- **Firestore → Rules**: paste the whole of `firestore.rules` from this repository and press **Publish**. Vercel does not deploy this file, so repeat this whenever it changes. (With the Firebase CLI signed in to the project's Google account, `firebase deploy --only firestore:rules` does the same.)
+- **Authentication → Sign-in method**: keep **Email/Password** switched on, and keep account creation (sign-up) allowed under **Authentication → Settings → User actions**. The **Users** page in the app relies on it to create accounts. A sign-in that no administrator added on the Users page gets no access to any data; the Firestore rules enforce that.
+- **Authentication → Users**: the place to delete a sign-in for good (the app can only remove its access).
+- The main administrator account is named by its account id in `firestore.rules` (`isOwner()`) and in `src/constants/accounts.ts` (`OWNER_UID`). If that account is ever replaced, change the id in both places and publish the rules again.

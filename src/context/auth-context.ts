@@ -1,9 +1,14 @@
 import { createContext, useContext } from 'react';
 import type { User } from 'firebase/auth';
+import type { AccountRole } from '../types';
 
 export interface AuthContextType {
     currentUser: User | null;
-    /** Read-only account (custom claim role = "auditor"): can view everything, change nothing */
+    /** From the account's profile (users/{uid}); null = signed in but not given access, or access removed */
+    role: AccountRole | null;
+    /** Can manage user accounts */
+    isAdmin: boolean;
+    /** Read-only account: can view everything, change nothing */
     isAuditor: boolean;
     loading: boolean;
     logout: () => Promise<void>;

@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 
 // Layout & Auth
 import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute, { EditorRoute } from './components/common/ProtectedRoute';
+import ProtectedRoute, { AdminRoute, EditorRoute } from './components/common/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
@@ -16,7 +16,10 @@ const AssetsPage = lazy(() => import('./pages/assets/AssetsPage'));
 const AddAssetPage = lazy(() => import('./pages/assets/AddAssetPage'));
 const EditAssetPage = lazy(() => import('./pages/assets/EditAssetPage'));
 const AssetDetailsPage = lazy(() => import('./pages/assets/AssetDetailsPage'));
+const StickersPage = lazy(() => import('./pages/stickers/StickersPage'));
 const LogsPage = lazy(() => import('./pages/audit-logs'));
+const ChangePasswordPage = lazy(() => import('./pages/account/ChangePasswordPage'));
+const UsersPage = lazy(() => import('./pages/users/UsersPage'));
 
 function App() {
   return (
@@ -41,7 +44,12 @@ function App() {
                   <Route path="/assets/edit/:id" element={<EditAssetPage />} />
                 </Route>
                 <Route path="/assets/:id" element={<AssetDetailsPage />} />
+                <Route path="/stickers" element={<StickersPage />} />
                 <Route path="/audit-logs" element={<LogsPage />} />
+                <Route element={<AdminRoute />}>
+                  <Route path="/users" element={<UsersPage />} />
+                </Route>
+                <Route path="/change-password" element={<ChangePasswordPage />} />
               </Route>
             </Route>
 

@@ -6,9 +6,10 @@ import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import AuthShell from '../../components/layout/AuthShell';
+import PasswordChecklist from '../../components/common/PasswordChecklist';
+import { meetsPasswordRules } from '../../utils/passwordRules';
 
 const INPUT_CLASS = 'appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#005500] focus:border-[#005500] sm:text-sm transition-colors';
-const MIN_PASSWORD_LENGTH = 8;
 
 /**
  * Landing page for the emailed reset link (?mode=resetPassword&oobCode=…). Used when the Firebase
@@ -38,8 +39,8 @@ export default function ResetPasswordPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (password.length < MIN_PASSWORD_LENGTH) {
-            setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+        if (!meetsPasswordRules(password)) {
+            setError('The new password does not meet the requirements.');
             return;
         }
         if (password !== confirmPassword) {
@@ -102,6 +103,9 @@ export default function ResetPasswordPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         className={`mt-1 ${INPUT_CLASS}`}
                     />
+                    <div className="mt-2">
+                        <PasswordChecklist password={password} />
+                    </div>
                 </div>
                 <div>
                     <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">Confirm new password</label>
